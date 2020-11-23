@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 import txt_mixin, os, shutil, copy
 from numpy.random import rand
@@ -52,8 +52,10 @@ def myrand(mymax=10.0, mymin=1):
     out = mymin + int(rand()*myspan+0.5)
     return out
 
+
 def rand_A_for_mul(mymax=10, mymin=0):
     return myrand(mymin, mymin)
+
 
 def get_two_numbers(mymax=10):
     A = myrand()
@@ -465,7 +467,7 @@ class multiply_range(multiply_by_B):
 class add_big_to_little(multiply_by_B):
     def __init__(self, filename, B_list=[1,2,3], max_A=1000, min_A=99, N=6, **kwargs):
         worksheet_generator.__init__(self, filename, N=N, **kwargs)
-        self.symbol = '\\times '
+        self.symbol = '+'
         self.max_A = max_A
         self.min_A = min_A
         self.B_list = B_list
@@ -473,12 +475,9 @@ class add_big_to_little(multiply_by_B):
         self.delta_A = self.max_A - self.min_A
 
 
-    def rand_A(self, mymax=None):
-        if mymax is None:
-            mymax = self.max_A
-        #def myrand(mymax=10.0, mymin=1):
-        return myrand(mymax, mymin=0)
-
+    def rand_A(self):
+        return myrand(self.max_A, self.min_A)
+    
 
     def gen_numbers(self, prev_A=-1, prev_B=-1):
         """Make sure we don't have duplicate problems right after one
@@ -486,7 +485,7 @@ class add_big_to_little(multiply_by_B):
         
         B_ind = int(self.N_B*rand())
         B = self.B_list[B_ind]
-        A = self.min_A() + self.rand_A(self.delta_A)
+        A = self.rand_A()
             
         while (A==prev_A):
             A = self.rand_A()
