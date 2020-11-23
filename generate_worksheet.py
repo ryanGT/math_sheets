@@ -14,9 +14,10 @@ header_list = ['\\documentclass{article}', \
                '\\tabulinesep=_30pt', \
                '\\begin{document}', \
                '\\thispagestyle{empty}', \
-               #'\\begin{center}', \
-               #"\\LARGE Joshie's Math Homework", \
-               #'\\end{center}', \
+               '\\begin{center}', \
+               "\\LARGE %TITLE%", \
+               '\\end{center}', \
+               '\\vspace{-0.3in}', \
                '%\\begin{tabu} to \\linewidth {XXXXX}', \
                '%\\vspace{0.4in}', \
                '\\def \\myspace {0.6in}', \
@@ -137,6 +138,7 @@ def generate_worksheet(filename, M=5, N=5, case=1, mymax=12):
         biglist.extend(['','\\\\',''])
         extra_space = True
 
+    header_list = self.get_header_list()
     body_list = header_list + biglist + tail_list
 
     txt_mixin.dump(filename, body_list)
@@ -146,13 +148,14 @@ def generate_worksheet(filename, M=5, N=5, case=1, mymax=12):
 
 class worksheet_generator(object):
     def __init__(self, filename, M=6, N=5, mymax=20, \
-                 symbol='+'):
+                 symbol='+', title="Math Sheet"):
         self.filename = filename
         self.M = M
         self.N = N
         self.mymax = mymax
         self.symbol = symbol
         print("self.N = %i" % self.N)
+        self.title = title
 
 
     def run_latex(self):
@@ -204,7 +207,14 @@ class worksheet_generator(object):
 
     def get_header_list(self):
         hl_list = copy.copy(header_list)
-        
+
+        flist = ['%TITLE%']
+        replist = [self.title]
+
+        for f, r in zip(flist, replist):
+            hl_list = [line.replace(f, r) for line in hl_list]
+            
+            
         if self.N != 5:
             findstr = "XXXXX"
             repstr = "X"*self.N
@@ -573,6 +583,7 @@ class multiplication_intro_generator(multiply_by_3):
             biglist.extend(['','\\\\',''])
 
 
+        header_list = self.get_header_list()
         body_list = header_list + biglist + tail_list
 
         txt_mixin.dump(self.filename, body_list)
@@ -787,8 +798,8 @@ def get_rand_list_entry(listin):
 
 class improper_fractions_gen(worksheet_generator):
     def __init__(self, filename, M=5, N=3, mymax=20, \
-                 den_list=[2,3,4], whole_list=[1,2,3,4]):
-        worksheet_generator.__init__(self, filename, M=M, N=N)
+                 den_list=[2,3,4], whole_list=[1,2,3,4], **kwargs):
+        worksheet_generator.__init__(self, filename, M=M, N=N, **kwargs)
         self.den_list = den_list
         self.whole_list = whole_list
 
@@ -840,7 +851,64 @@ def generate_number_bonds(save_num=1):
 
     return name_top
 
-new = 1
+
+
+import datetime
+now = datetime.datetime.now()
+datestr = now.strftime('%m_%d_%y')
+
+def process_one_batch(mylist, title, lpr=False, web=False):
+    for row in mylist:
+        myclass = row[0]
+        fn = row[1]
+        if len(row) == 2:
+            kwargs = {}
+        else:
+            kwargs = row[2]
+        myworksheet = myclass(fn, title=title, **kwargs)
+        myworksheet.generate_worksheet()
+        myworksheet.run_latex()
+
+        fno, ext = os.path.splitext(fn)
+        pdf_name = fno + '.pdf'
+
+        if web:
+            pcmd = "python3 -m webbrowser %s &" % pdf_name
+            #pcmd = "okular %s" % pdf_name
+            os.system(pcmd)
+
+        if lpr:
+            pcmd = "okular %s &" % pdf_name
+            os.system(pcmd)
+
+
+siah_list = [#(multiplication_intro_generator, 'multiply_by_3_intro.tex'), \
+             #(multiplication_intro_generator, 'multiply_by_4_intro.tex', {'B':4}), \
+             #(multiply_range, 'multiply_by_2_thru_4_%s.tex' % datestr, {'B_list':[2,3,4]}), \
+             (subtraction_force_negative, 'neg_subtract_1.tex', {}), \
+             (add_big_to_little, 'add_big_to_little.tex', {}), \
+            ]
+
+cayden_list = [(addition_level_2,'addition_new_2.tex',{'max_A':30, 'max_B':20}), \
+               (addition_within_20, "addition_within_20_p_1.tex",{}), \
+               (addition_within_20, "addition_within_20_p_2.tex",{}), \
+               (subtraction_generator,'subtraction_within_20_p_1.tex',{'mymax':20}), \
+               (subtraction_generator,'subtraction_within_20_p_2.tex',{'mymax':20}), \
+              ]
+
+
+joshua_list = [(multiply_by_B, 'multiply_by_8_%s.tex' % datestr, {'B':8}), \
+               (multiply_by_B, 'multiply_by_9_%s.tex' % datestr, {'B':9}), \
+               (multiply_range, 'multiply_by_5_thru_9_%s.tex' % datestr, {'B_list':[5,6,7,8,9]}), \
+               (improper_fractions_gen, "imp_frac_1_%s.tex" % datestr), \
+              ]
+
+process_one_batch(siah_list, title="Josiah's Math Sheets", lpr=0, web=1)
+process_one_batch(cayden_list, title="Cayden's Math Sheets", lpr=0, web=1)
+process_one_batch(joshua_list, title="Joshua's Math Sheets", lpr=0, web=1)
+
+
+new = 0
 if new:
     ## myworksheet = worksheet_generator('addition_new.tex')
     ## myworksheet.generate_worksheet()
@@ -894,17 +962,6 @@ if new:
              (add_big_to_little, 'add_big_to_little.tex', {}), \
              ]
     
-    list2 = [#(multiplication_generator,'multiplication.tex',{}), \             
-            (multiply_by_B, 'multiply_by_8_%s.tex' % datestr, {'B':8}), \
-            (multiply_by_B, 'multiply_by_9_%s.tex' % datestr, {'B':9}), \
-            (multiply_range, 'multiply_by_5_thru_9_%s.tex' % datestr, {'B_list':[5,6,7,8,9]}), \
-            (improper_fractions_gen, "imp_frac_1_%s.tex" % datestr), \
-            (addition_level_2,'addition_new_2.tex',{'max_A':30, 'max_B':20}), \
-            (addition_within_20, "addition_within_20_p_1.tex",{}), \
-            (addition_within_20, "addition_within_20_p_2.tex",{}), \
-            (subtraction_generator,'subtraction_within_20_p_1.tex',{'mymax':20}), \
-            (subtraction_generator,'subtraction_within_20_p_1.tex',{'mymax':20}), \
-            ]
 
     mylist = list1#+list2
     ## mypairs = {#one_more_generator:'one_more_addition.tex', \
