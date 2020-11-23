@@ -5,7 +5,16 @@ from numpy.random import rand
 import numpy as np
 from IPython.core.debugger import Pdb
 import argparse
-    
+
+parser = argparse.ArgumentParser()
+parser.add_argument("-l", "--lpr", action="store_true", \
+                    help="send math sheets to lpr", \
+                    default=False)
+parser.add_argument("-w", "--web", action="store_true", \
+                    help="open math sheets using python web browser", \
+                    default=False)
+args = parser.parse_args()
+
 header_list = ['\\documentclass{article}', \
                '\\usepackage[letterpaper, margin=1in]{geometry}', \
                '\\usepackage{tabu,mathtools}', \
@@ -856,6 +865,7 @@ def generate_number_bonds(save_num=1):
 import datetime
 now = datetime.datetime.now()
 datestr = now.strftime('%m_%d_%y')
+import time
 
 def process_one_batch(mylist, title, lpr=False, web=False):
     for row in mylist:
@@ -876,9 +886,10 @@ def process_one_batch(mylist, title, lpr=False, web=False):
             pcmd = "python3 -m webbrowser %s &" % pdf_name
             #pcmd = "okular %s" % pdf_name
             os.system(pcmd)
-
+            time.sleep(0.2)
+            
         if lpr:
-            pcmd = "okular %s &" % pdf_name
+            pcmd = "lpr %s &" % pdf_name
             os.system(pcmd)
 
 
@@ -903,9 +914,11 @@ joshua_list = [(multiply_by_B, 'multiply_by_8_%s.tex' % datestr, {'B':8}), \
                (improper_fractions_gen, "imp_frac_1_%s.tex" % datestr), \
               ]
 
-process_one_batch(siah_list, title="Josiah's Math Sheets", lpr=0, web=1)
-process_one_batch(cayden_list, title="Cayden's Math Sheets", lpr=0, web=1)
-process_one_batch(joshua_list, title="Joshua's Math Sheets", lpr=0, web=1)
+web = args.web
+lpr = args.lpr
+process_one_batch(siah_list, title="Josiah's Math Sheets", lpr=lpr, web=web)
+process_one_batch(cayden_list, title="Cayden's Math Sheets", lpr=lpr, web=web)
+process_one_batch(joshua_list, title="Joshua's Math Sheets", lpr=lpr, web=web)
 
 
 new = 0
