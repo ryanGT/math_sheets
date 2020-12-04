@@ -483,6 +483,55 @@ class multiply_range(multiply_by_B):
         
 
 
+class multiply_fraction_by_powers_of_ten(multiply_range):
+    def __init__(self, filename, B_list=[10,100,1000], max_A=30, M=5, N=4, **kwargs):
+        multiply_range.__init__(self, filename, B_list=[10,100,1000], max_A=30, \
+                                M=M, N=N, **kwargs)
+
+
+    def get_header_list(self):
+        hl_list = multiply_range.get_header_list(self)
+        f = '\\def \\myspace {0.6in}'
+        r = '\\def \\myspace {0.9in}'
+        outlist = [line.replace(f,r) for line in hl_list]
+        return outlist
+
+
+    def gen_numbers(self, prev_A=-1, prev_B=-1):
+        """Make sure we don't have duplicate problems right after one
+        another"""
+
+        B_ind = int(self.N_B*rand())
+        B = self.B_list[B_ind]
+        A = self.max_A*rand()
+
+        while (A==prev_A):
+            A = self.rand_A()
+
+        return A, B
+
+
+
+    def one_problem(self, part1, part2, extra_space=True, \
+                    symbol=None):
+        if symbol is None:
+            symbol = self.symbol
+
+        outlist = []
+        out = outlist.append
+
+        if extra_space:
+            out('\\vspace{\\myspace}')
+
+        out('$\\begin{array}{r}')
+        out('%0.4g \\\\' % part1)
+        out('%s %i \\\\' % (symbol, part2))
+        out('\\hline')
+        out('\\end{array}$')
+
+        return outlist
+
+
 class add_big_to_little(multiply_by_B):
     def __init__(self, filename, B_list=[1,2,3], max_A=1000, min_A=99, N=6, **kwargs):
         worksheet_generator.__init__(self, filename, N=N, **kwargs)
@@ -537,6 +586,7 @@ class multiplication_intro_generator(multiply_by_3):
         self.symbol = '\\times '
         self.max_A = max_A
         self.B = B
+
 
 
     def gen_numbers(self, prev_A=-1, prev_B=-1):
@@ -914,12 +964,16 @@ joshua_list = [(multiply_by_B, 'multiply_by_8_%s.tex' % datestr, {'B':8}), \
                (multiply_by_B, 'multiply_by_9_%s.tex' % datestr, {'B':9}), \
                (multiply_range, 'multiply_by_5_thru_9_%s.tex' % datestr, {'B_list':[5,6,7,8,9]}), \
                (improper_fractions_gen, "imp_frac_1_%s.tex" % datestr), \
+               (multiply_fraction_by_powers_of_ten, "decimal_powers.tex", {}), \
               ]
+
+Jlist2 = [(multiply_fraction_by_powers_of_ten, "decimal_powers.tex", {})]
 
 web = args.web
 lpr = args.lpr
-process_one_batch(siah_list, title="Josiah's Math Sheets", lpr=lpr, web=web)
-process_one_batch(cayden_list, title="Cayden's Math Sheets", lpr=lpr, web=web)
-process_one_batch(joshua_list, title="Joshua's Math Sheets", lpr=lpr, web=web)
+#process_one_batch(siah_list, title="Josiah's Math Sheets", lpr=lpr, web=web)
+#process_one_batch(cayden_list, title="Cayden's Math Sheets", lpr=lpr, web=web)
+#process_one_batch(joshua_list, title="Joshua's Math Sheets", lpr=lpr, web=web)
+process_one_batch(Jlist2, title="Joshua's Math Sheets", lpr=lpr, web=web)
 
 
