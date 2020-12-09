@@ -484,16 +484,23 @@ class multiply_range(multiply_by_B):
 
 
 class multiply_fraction_by_powers_of_ten(multiply_range):
-    def __init__(self, filename, B_list=[10,100,1000], max_A=30, M=5, N=4, **kwargs):
+    def __init__(self, filename, B_list=[10,100,1000], max_A=30, \
+                 M=3, N=2, **kwargs):
         multiply_range.__init__(self, filename, B_list=[10,100,1000], max_A=30, \
                                 M=M, N=N, **kwargs)
 
 
     def get_header_list(self):
         hl_list = multiply_range.get_header_list(self)
-        f = '\\def \\myspace {0.6in}'
-        r = '\\def \\myspace {0.9in}'
-        outlist = [line.replace(f,r) for line in hl_list]
+        f1 = '\\def \\myspace {0.6in}'
+        r1 = '\\def \\myspace {1.2in}'
+        f2 = '\\Large'
+        r2 = '\\huge'
+        flist = [f1,f2]
+        rlist = [r1,r2]
+        outlist = copy.copy(hl_list)
+        for f,r in zip(flist, rlist):
+            outlist = [line.replace(f,r) for line in outlist]
         return outlist
 
 
