@@ -488,18 +488,18 @@ class multiply_fraction_by_powers_of_ten(multiply_range):
                  M=3, N=2, **kwargs):
         multiply_range.__init__(self, filename, B_list=[10,100,1000], max_A=30, \
                                 M=M, N=N, **kwargs)
-
-
-    def get_header_list(self):
-        hl_list = multiply_range.get_header_list(self)
         f1 = '\\def \\myspace {0.6in}'
         r1 = '\\def \\myspace {1.2in}'
         f2 = '\\Large'
         r2 = '\\huge'
-        flist = [f1,f2]
-        rlist = [r1,r2]
+        self.header_find_list = [f1,f2]
+        self.header_replace_list = [r1,r2]
+
+
+    def get_header_list(self):
+        hl_list = multiply_range.get_header_list(self)
         outlist = copy.copy(hl_list)
-        for f,r in zip(flist, rlist):
+        for f,r in zip(self.header_find_list, self.header_replace_list):
             outlist = [line.replace(f,r) for line in outlist]
         return outlist
 
@@ -539,6 +539,75 @@ class multiply_fraction_by_powers_of_ten(multiply_range):
         return outlist
 
 
+class multiply_fraction_horizontal(multiply_fraction_by_powers_of_ten):
+    def __init__(self, filename, B_list=[10,100,1000], max_A=30, \
+                 M=7, N=1, **kwargs):
+        multiply_fraction_by_powers_of_ten.__init__(self, filename, B_list=[10,100,1000], max_A=90, \
+                                                    M=M, N=N, **kwargs)
+        self.header_find_list.append('\\vspace{-0.3in}')
+        self.header_replace_list.append('%%%%')
+
+    
+    def one_problem(self, part1, part2, symbol=None, extra_space=True, **kwargs):
+        if symbol is None:
+            symbol = self.symbol
+
+        outlist = []
+        out = outlist.append
+
+        if extra_space:
+            out('\\vspace{1EM}')
+
+
+        pat = '$%0.4g \\; %s \\; %s \\; = \;$  \\rule{5EM}{1pt}'
+        lineout = pat % (part1, symbol, part2)
+        out(lineout)
+
+        return outlist
+    
+
+class multiply_fraction_horizontal_with_blanks(multiply_fraction_horizontal):
+    def one_problem(self, part1, part2, symbol=None, extra_space=True, **kwargs):
+        if symbol is None:
+            symbol = self.symbol
+
+        outlist = []
+        out = outlist.append
+
+        if extra_space:
+            out('\\vspace{1EM}')
+
+
+        blank_rand = rand()
+        if blank_rand < 0.5:
+            has_blank = True
+        else:
+            has_blank = False
+
+        if has_blank:
+            p1str ="%0.4g" % float(part1)
+            p1f = float(p1str)
+            p2 = float(part2)
+            ans = p1f*p2
+            pat = '$%0.4g \\; %s \\; \\rule{5EM}{1pt} \\; = \; %0.6g$'
+            lineout = pat % (part1, symbol, ans)
+        else:
+            pat = '$%0.4g \\; %s \\; %s \\; = \;$  \\rule{5EM}{1pt}'
+            lineout = pat % (part1, symbol, part2)
+            
+        out(lineout)
+
+        return outlist
+
+    
+class divide_fraction_horizontal(multiply_fraction_horizontal):
+    def __init__(self, filename, B_list=[10,100,1000], max_A=100, \
+                 M=7, N=1, **kwargs):
+        multiply_fraction_horizontal.__init__(self, filename, B_list=[10,100,1000], max_A=90, \
+                                                    M=M, N=N, **kwargs)
+        self.symbol = ' \\div '
+    
+    
 class add_big_to_little(multiply_by_B):
     def __init__(self, filename, B_list=[1,2,3], max_A=1000, min_A=99, N=6, **kwargs):
         worksheet_generator.__init__(self, filename, N=N, **kwargs)
@@ -971,10 +1040,13 @@ joshua_list = [(multiply_by_B, 'multiply_by_8_%s.tex' % datestr, {'B':8}), \
                (multiply_by_B, 'multiply_by_9_%s.tex' % datestr, {'B':9}), \
                (multiply_range, 'multiply_by_5_thru_9_%s.tex' % datestr, {'B_list':[5,6,7,8,9]}), \
                (improper_fractions_gen, "imp_frac_1_%s.tex" % datestr), \
-               (multiply_fraction_by_powers_of_ten, "decimal_powers.tex", {}), \
+               (multiply_fraction_horizontal, "decimal_powers_h.tex", {}), \
               ]
 
-Jlist2 = [(multiply_fraction_by_powers_of_ten, "decimal_powers.tex", {})]
+Jlist2 = [(multiply_fraction_horizontal, "decimal_powers_h.tex", {}), \
+          (divide_fraction_horizontal, "decimal_divide_powers_h.tex", {}), \
+          (multiply_fraction_horizontal_with_blanks, "decimal_mult_w_blanks.tex", {}), \
+          ]
 
 web = args.web
 lpr = args.lpr
