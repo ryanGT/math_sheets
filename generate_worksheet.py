@@ -13,6 +13,9 @@ parser.add_argument("-l", "--lpr", action="store_true", \
 parser.add_argument("-w", "--web", action="store_true", \
                     help="open math sheets using python web browser", \
                     default=False)
+parser.add_argument("-o", "--okular", action="store_true", \
+                    help="open math sheets using okular", \
+                    default=False)
 args = parser.parse_args()
 
 header_list = ['\\documentclass{article}', \
@@ -39,6 +42,63 @@ header_list = ['\\documentclass{article}', \
 tail_list = ['\\end{tabularx}', \
              '\\end{document}', \
              ]
+
+##########################################################
+#
+# Recent work on large and small floats to strings:
+# (Jan. 2021)
+#
+##########################################################
+def check_fstr(float_in, fstr):
+    f2 = float(fstr)
+    diff = abs(float_in-f2)
+    pdiff = abs(diff/float_in)*100
+    if pdiff < 0.01:
+        return True
+    else:
+        return False
+
+def small_float_to_str(float_in, start_exp=6):
+    i = int(start_exp)
+    fmt = "%0." + str(i) + "f"
+    out_str = fmt % float_in
+    #print("i = %i, out_str = %s" % (i, out_str))
+    while not check_fstr(float_in, out_str):
+        i += 1
+        fmt = "%0." + str(i) + "f"
+        out_str = fmt % float_in
+        #print("i = %i, out_str = %s", (i, out_str))
+    return out_str
+
+
+
+def large_float_to_str(float_in):
+    fmt1 = "%0.6g"
+    str1 = fmt1 % float_in
+    if "e" in str1:
+        out_str = "%i" % float_in
+    else:
+        out_str = str1
+    return out_str
+
+
+def my_float_to_str(float_in):
+    fmt0 = "%0.6g"
+    str0 = fmt0 % float_in
+    if "e" in str0:
+        if float_in < 1:
+            return small_float_to_str(float_in)
+        else:
+            return large_float_to_str(float_in)
+    else:
+        return str0
+
+
+##########################################################
+#
+# End of float to string stuff
+#
+##########################################################
 
 def one_problem(part1, part2, extra_space=True, \
                 symbol='+'):
@@ -688,7 +748,7 @@ class multiply_or_divide_horiz_large_exponents_blanks(multiply_or_divide_decimal
 
         
         if has_blank:
-            p1str ="%0.4g" % float(part1)
+            p1str ="%0.4g" % float(part1)# These two lines are a form of rounding
             p1f = float(p1str)
             print("part2 = %s" % part2)
             p2 = 10**(float(part2))
@@ -696,13 +756,9 @@ class multiply_or_divide_horiz_large_exponents_blanks(multiply_or_divide_decimal
                 ans = p1f/p2
             else:
                 ans = p1f*p2
-            if ans > 0.01:
-                pat = '$%0.4g \\; %s \\; \\rule{5EM}{1pt} \\; = \; %0.6g$'
-            elif ans > 0.0001:
-                pat = '$%0.4g \\; %s \\; \\rule{5EM}{1pt} \\; = \; %0.8f$'
-            else:
-                pat = '$%0.4g \\; %s \\; \\rule{5EM}{1pt} \\; = \; %0.12f$'
-            lineout = pat % (part1, symbol, ans)
+            ans_str = my_float_to_str(ans)
+            pat = '$%0.4g \\; %s \\; \\rule{5EM}{1pt} \\; = \; %s$'
+            lineout = pat % (part1, symbol, ans_str)
         else:
             if float(part2) > 1.5:
                 pat = '$%0.4g \\; %s \\; 10^{%s} \\; = \;$  \\rule{5EM}{1pt}'
@@ -1110,7 +1166,7 @@ now = datetime.datetime.now()
 datestr = now.strftime('%m_%d_%y')
 import time
 
-def process_one_batch(mylist, title, lpr=False, web=False):
+def process_one_batch(mylist, title, lpr=False, web=False, okular=False):
     for row in mylist:
         myclass = row[0]
         fn = row[1]
@@ -1128,6 +1184,12 @@ def process_one_batch(mylist, title, lpr=False, web=False):
         if web:
             pcmd = "python3 -m webbrowser %s &" % pdf_name
             #pcmd = "okular %s" % pdf_name
+            os.system(pcmd)
+            time.sleep(0.2)
+
+        if okular:
+            #pcmd = "python3 -m webbrowser %s &" % pdf_name
+            pcmd = "okular %s &" % pdf_name
             os.system(pcmd)
             time.sleep(0.2)
             
@@ -1171,9 +1233,10 @@ Jlist2 = [#(multiply_fraction_horizontal, "decimal_powers_h.tex", {}), \
 
 web = args.web
 lpr = args.lpr
+okular = args.okular
 #process_one_batch(siah_list, title="Josiah's Math Sheets", lpr=lpr, web=web)
 #process_one_batch(cayden_list, title="Cayden's Math Sheets", lpr=lpr, web=web)
 #process_one_batch(joshua_list, title="Joshua's Math Sheets", lpr=lpr, web=web)
-process_one_batch(Jlist2, title="Joshua's Math Sheets", lpr=lpr, web=web)
+process_one_batch(Jlist2, title="Joshua's Math Sheets", lpr=lpr, web=web, okular=okular)
 
 
