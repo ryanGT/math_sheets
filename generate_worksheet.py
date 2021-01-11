@@ -599,6 +599,40 @@ class multiply_fraction_by_powers_of_ten(multiply_range):
         return outlist
 
 
+class multiply_or_divide_decimal_by_powers_of_ten_vertical(multiply_fraction_by_powers_of_ten):
+    def get_symbol(self):
+        symbol_rand = rand()
+
+        if symbol_rand < 0.5:
+            symbol = '\\times '
+            divide = False
+        else:
+            symbol = ' \\div '
+            divide = True
+        return symbol, divide
+
+
+    
+    def one_problem(self, part1, part2, extra_space=True, \
+                    symbol=None):
+        symbol, divide = self.get_symbol()
+
+        outlist = []
+        out = outlist.append
+
+        if extra_space:
+            out('\\vspace{\\myspace}')
+
+        out('$\\begin{array}{r}')
+        out('%0.4g \\\\' % part1)
+        out('%s %i \\\\' % (symbol, part2))
+        out('\\hline')
+        out('\\end{array}$')
+
+        return outlist
+
+
+
 class multiply_fraction_horizontal(multiply_fraction_by_powers_of_ten):
     def __init__(self, filename, B_list=[10,100,1000], max_A=30, \
                  M=7, N=1, **kwargs):
@@ -1229,6 +1263,7 @@ Jlist2 = [#(multiply_fraction_horizontal, "decimal_powers_h.tex", {}), \
           #(improper_fractions_gen, "imp_frac_1_%s.tex" % datestr), \
           (multiply_or_divide_decimal_horizontal_with_blanks, "decimal_mult_or_div_with_blanks.tex"), \
           (multiply_or_divide_horiz_large_exponents_blanks, "decimal_mult_or_div_large_exp_with_blanks.tex"), \
+          (multiply_or_divide_decimal_by_powers_of_ten_vertical, "decimal_mult_or_div_vert.tex"), \
           ]
 
 web = args.web
