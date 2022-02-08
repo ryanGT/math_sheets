@@ -16,6 +16,16 @@ parser.add_argument("-w", "--web", action="store_true", \
 parser.add_argument("-o", "--okular", action="store_true", \
                     help="open math sheets using okular", \
                     default=False)
+parser.add_argument("-j", "--joshua", action="store_true", \
+                    help="make math sheets for joshua", \
+                    default=False)
+parser.add_argument("-s", "--siah", action="store_true", \
+                    help="make math sheets for joshua", \
+                    default=False)
+parser.add_argument("-c", "--cayden", action="store_true", \
+                    help="make math sheets for joshua", \
+                    default=False)
+
 args = parser.parse_args()
 
 header_list = ['\\documentclass{article}', \
@@ -30,6 +40,7 @@ header_list = ['\\documentclass{article}', \
                "\\LARGE %TITLE%", \
                '\\end{center}', \
                '\\vspace{-0.3in}', \
+               '%%%INSTRUCTIONS%%%', \
                '%\\begin{tabu} to \\linewidth {XXXXX}', \
                '%\\vspace{0.4in}', \
                '\\def \\myspace {0.6in}', \
@@ -73,7 +84,7 @@ def small_float_to_str(float_in, start_exp=6):
 
 
 def large_float_to_str(float_in):
-    fmt1 = "%0.6g"
+    fmt1 = "%0.4g"
     str1 = fmt1 % float_in
     if "e" in str1:
         out_str = "%i" % float_in
@@ -83,7 +94,7 @@ def large_float_to_str(float_in):
 
 
 def my_float_to_str(float_in):
-    fmt0 = "%0.6g"
+    fmt0 = "%0.4g"
     str0 = fmt0 % float_in
     if "e" in str0:
         if float_in < 1:
@@ -216,12 +227,15 @@ def generate_worksheet(filename, M=5, N=5, case=1, mymax=12):
 
 
 class worksheet_generator(object):
-    def __init__(self, filename, M=6, N=5, mymax=20, \
-                 symbol='+', title="Math Sheet"):
+    def __init__(self, filename, M=6, N=5, mymax=20, max_A=10, \
+                 symbol='+', title="Math Sheet", **kwargs):
+        # should worksheet_generator use max_A and max_B to be the
+        # base class?
         self.filename = filename
         self.M = M
         self.N = N
         self.mymax = mymax
+        self.max_A = max_A
         self.symbol = symbol
         print("self.N = %i" % self.N)
         self.title = title
@@ -473,9 +487,9 @@ class multiplication_generator(worksheet_generator):
 
 class multiply_by_3(multiplication_generator):
     def __init__(self, filename, max_A=9, **kwargs):
-        worksheet_generator.__init__(self, filename, **kwargs)
+        worksheet_generator.__init__(self, filename, max_A=max_A, **kwargs)
         self.symbol = '\\times '
-        self.max_A = max_A
+        #self.max_A = max_A
 
 
     def rand_A(self):
@@ -498,9 +512,9 @@ class multiply_by_3(multiplication_generator):
 
 class multiply_by_B(multiply_by_3):
     def __init__(self, filename, B=4, max_A=9, N=6, **kwargs):
-        worksheet_generator.__init__(self, filename, N=N, **kwargs)
+        worksheet_generator.__init__(self, filename, N=N, max_A=max_A, **kwargs)
         self.symbol = '\\times '
-        self.max_A = max_A
+        #self.max_A = max_A
         self.B = B
 
 
@@ -546,7 +560,7 @@ class multiply_range(multiply_by_B):
 class multiply_fraction_by_powers_of_ten(multiply_range):
     def __init__(self, filename, B_list=[10,100,1000], max_A=30, \
                  M=3, N=2, **kwargs):
-        multiply_range.__init__(self, filename, B_list=B_list, max_A=30, \
+        multiply_range.__init__(self, filename, B_list=B_list, max_A=max_A, \
                                 M=M, N=N, **kwargs)
         f1 = '\\def \\myspace {0.6in}'
         r1 = '\\def \\myspace {1.2in}'
@@ -599,7 +613,7 @@ class multiply_fraction_by_powers_of_ten(multiply_range):
         return outlist
 
 
-class multiply_or_divide_decimal_by_powers_of_ten_vertical(multiply_fraction_by_powers_of_ten):
+class vertical_math_problem(object):# mix in class with no other methods to avoid inheritance problems
     def get_symbol(self):
         symbol_rand = rand()
 
@@ -612,7 +626,7 @@ class multiply_or_divide_decimal_by_powers_of_ten_vertical(multiply_fraction_by_
         return symbol, divide
 
 
-    
+
     def one_problem(self, part1, part2, extra_space=True, \
                     symbol=None):
         symbol, divide = self.get_symbol()
@@ -632,11 +646,60 @@ class multiply_or_divide_decimal_by_powers_of_ten_vertical(multiply_fraction_by_
         return outlist
 
 
+class multiply_or_divide_decimal_by_powers_of_ten_vertical(vertical_math_problem):
+    pass
 
+
+class vertical_mul_only(vertical_math_problem):# mix in class with minimal methods to avoid inheritance problems
+    def get_symbol(self):
+        symbol = '\\times '
+        divide = False
+        return symbol, divide
+
+
+class problem_with_random_A_and_B(worksheet_generator):
+    def __init__(self, filename, max_A=10, max_B=10, \
+                 M=3, N=2, **kwargs):
+        worksheet_generator.__init__(self, filename, M=M, N=N, \
+                                     **kwargs)
+        self.max_A = max_A
+        self.max_B = max_B
+
+        
+    def rand_B(self):
+        return myrand(self.max_B, mymin=0)
+
+
+    def rand_A(self):
+        return myrand(self.max_A, mymin=0)
+
+
+    def gen_numbers(self, prev_A=-1, prev_B=-1):
+        """Make sure we don't have duplicate problems right after one
+        another"""
+
+        B = self.rand_B()
+        A = self.rand_A()
+
+        while (A==prev_A):
+            A = self.rand_A()
+
+        while (B==prev_B):
+            B = self.rand_B()
+        return A, B
+
+
+class mul_3_digits_by_1_digit_vertical(vertical_mul_only, problem_with_random_A_and_B):
+    def __init__(self, filename, max_A=1000, max_B=10, \
+                 M=5, N=4, **kwargs):
+        problem_with_random_A_and_B.__init__(self, filename, max_A=max_A, max_B=max_B, \
+                                             M=M, N=N, **kwargs)
+    
+                                       
 class multiply_fraction_horizontal(multiply_fraction_by_powers_of_ten):
     def __init__(self, filename, B_list=[10,100,1000], max_A=30, \
                  M=7, N=1, **kwargs):
-        multiply_fraction_by_powers_of_ten.__init__(self, filename, B_list=B_list, max_A=90, \
+        multiply_fraction_by_powers_of_ten.__init__(self, filename, B_list=B_list, max_A=max_A, \
                                                     M=M, N=N, **kwargs)
         self.header_find_list.append('\\vspace{-0.3in}')
         self.header_replace_list.append('%%%%')
@@ -684,7 +747,7 @@ class multiply_fraction_horizontal_with_blanks(multiply_fraction_horizontal):
             p1f = float(p1str)
             p2 = float(part2)
             ans = p1f*p2
-            pat = '$%0.4g \\; %s \\; \\rule{5EM}{1pt} \\; = \; %0.6g$'
+            pat = '$%0.4g \\; %s \\; \\rule{5EM}{1pt} \\; = \; %0.4g$'
             lineout = pat % (part1, symbol, ans)
         else:
             pat = '$%0.4g \\; %s \\; %s \\; = \;$  \\rule{5EM}{1pt}'
@@ -728,7 +791,7 @@ class multiply_or_divide_decimal_horizontal_with_blanks(multiply_fraction_horizo
                 ans = p1f/p2
             else:
                 ans = p1f*p2
-            pat = '$%0.4g \\; %s \\; \\rule{5EM}{1pt} \\; = \; %0.6g$'
+            pat = '$%0.4g \\; %s \\; \\rule{5EM}{1pt} \\; = \; %0.4g$'
             lineout = pat % (part1, symbol, ans)
         else:
             pat = '$%0.4g \\; %s \\; %s \\; = \;$  \\rule{5EM}{1pt}'
@@ -746,7 +809,20 @@ class multiply_or_divide_horiz_large_exponents_blanks(multiply_or_divide_decimal
              M=7, N=1, **kwargs):
         multiply_or_divide_decimal_horizontal_with_blanks.__init__(self, filename, B_list=B_list, max_A=max_A,
                                                                   M=M, N=N, **kwargs)
-       
+
+
+    def get_ans_str(self, part1, part2, divide=False):
+        p1str ="%0.4g" % float(part1)# These two lines are a form of rounding
+        p1f = float(p1str)
+        #print("part2 = %s" % part2)
+        p2 = 10**(float(part2))
+        if divide:
+            ans = p1f/p2
+        else:
+            ans = p1f*p2
+        ans_str = my_float_to_str(ans)
+        return ans_str
+        
 
     def get_symbol(self):
         symbol_rand = rand()
@@ -782,15 +858,7 @@ class multiply_or_divide_horiz_large_exponents_blanks(multiply_or_divide_decimal
 
         
         if has_blank:
-            p1str ="%0.4g" % float(part1)# These two lines are a form of rounding
-            p1f = float(p1str)
-            print("part2 = %s" % part2)
-            p2 = 10**(float(part2))
-            if divide:
-                ans = p1f/p2
-            else:
-                ans = p1f*p2
-            ans_str = my_float_to_str(ans)
+            ans_str = self.get_ans_str(part1, part2, divide=divide)
             pat = '$%0.4g \\; %s \\; \\rule{5EM}{1pt} \\; = \; %s$'
             lineout = pat % (part1, symbol, ans_str)
         else:
@@ -806,11 +874,194 @@ class multiply_or_divide_horiz_large_exponents_blanks(multiply_or_divide_decimal
         return outlist
 
 
+class word_problem_multiply_version_1(multiply_or_divide_horiz_large_exponents_blanks):
+    def get_symbol(self):
+        symbol = ' times '
+        divide = 0
+        return symbol, divide
+
+
+    def one_problem(self, part1, part2, symbol=None, extra_space=True, **kwargs):
+        symbol, divide = self.get_symbol()
+
+        outlist = []
+        out = outlist.append
+
+        if extra_space:
+            out('\\vspace{1EM}')
+
+
+        p1str = my_float_to_str(part1)
+
+        if float(part2) > 1.5:
+            part2str = '10^{%s}' % part2
+        else:
+            part2str = '10'
+
+        pat = '$%s \\textrm{%s}  %s \\textrm{ is }  \\rule{10EM}{1pt}$.'
+        lineout = pat % (p1str, symbol, part2str)
+        out(lineout)
+
+        return outlist
+
     
+
+class word_problem_multiply_version_1_with_blanks(word_problem_multiply_version_1):
+    def one_problem(self, part1, part2, symbol=None, extra_space=True, **kwargs):
+        symbol, divide = self.get_symbol()
+
+        outlist = []
+        out = outlist.append
+
+        if extra_space:
+            out('\\vspace{1EM}')
+
+        has_blank = self.get_blank()
+            
+        p1str = my_float_to_str(part1)
+
+
+        if has_blank:
+            p1str ="%0.4g" % float(part1)# These two lines are a form of rounding
+            p1f = float(p1str)
+            #print("part2 = %s" % part2)
+            p2 = 10**(float(part2))
+            if divide:
+                ans = p1f/p2
+            else:
+                ans = p1f*p2
+            ans_str = my_float_to_str(ans)
+            pat = '$%s \\textrm{%s} \\rule{7EM}{1pt} \\textrm{ is } %s$.'
+            lineout = pat % (p1str, symbol, ans_str)
+        else:
+            if float(part2) > 1.5:
+                part2str = '10^{%s}' % part2
+            else:
+                part2str = '10'
+                
+            pat = '$%s \\textrm{%s}  %s \\textrm{ is }  \\rule{10EM}{1pt}$.'
+            lineout = pat % (p1str, symbol, part2str)
+
+        out(lineout)
+
+        return outlist
+
+
+class word_problem_multiply_version_2_ans_on_left(word_problem_multiply_version_1):
+    def one_problem(self, part1, part2, symbol=None, extra_space=True, **kwargs):
+        symbol, divide = self.get_symbol()
+
+        outlist = []
+        out = outlist.append
+
+        if extra_space:
+            out('\\vspace{1EM}')
+
+        p1str = my_float_to_str(part1)
+
+        if float(part2) > 1.5:
+            part2str = '10^{%s}' % part2
+        else:
+            part2str = '10'
+
+        has_blank = self.get_blank()
+
+        if has_blank:
+            ans_str = self.get_ans_str(part1, part2, divide=divide)
+            pat = '$%s \\textrm{ is } \\rule{7EM}{1pt} \\textrm{%s}  %s$.'
+            lineout = pat % (ans_str, symbol, p1str)
+        else:
+            pat = '$\\rule{10EM}{1pt} \\textrm{ is } %s \\textrm{%s}  %s$.'
+            lineout = pat % (part2str, symbol, p1str)
+        out(lineout)
+
+        return outlist
+
+
+
+class word_problem_multiply_version_2_ans_on_left_with_blanks(word_problem_multiply_version_2_ans_on_left):
+    def one_problem(self, part1, part2, symbol=None, extra_space=True, **kwargs):
+        symbol, divide = self.get_symbol()
+
+        outlist = []
+        out = outlist.append
+
+        if extra_space:
+            out('\\vspace{1EM}')
+
+
+        p1str = my_float_to_str(part1)
+
+        if float(part2) > 1.5:
+            part2str = '10^{%s}' % part2
+        else:
+            part2str = '10'
+
+            ans_str = self.get_ans_str(part1, part2, divide=divide)
+
+        pat = '$\\rule{10EM}{1pt} \\textrm{ is } %s \\textrm{%s}  %s$.'
+        lineout = pat % (part2str, symbol, p1str)
+        out(lineout)
+
+        return outlist
+
+
+
+class round_to_tens_three_digit(multiply_or_divide_horiz_large_exponents_blanks):
+    def __init__(self, filename, B_list=[1,2,3,4,5,6,7], max_A=1000, \
+                 min_A=10, M=7, N=2, **kwargs):
+        multiply_or_divide_horiz_large_exponents_blanks.__init__(self, filename, B_list=B_list, \
+                                                                 max_A=max_A,
+                                                                 M=M, N=N, **kwargs)
+        self.min_A = min_A
+
+
+    def get_header_list(self):
+        hl_list = multiply_or_divide_horiz_large_exponents_blanks.get_header_list(self)
+        mylist = ["{\\Large Round the numbers below to the tens place:\\\\}", \
+                  ]
+        ind = hl_list.index('%%%INSTRUCTIONS%%%')
+        hl_list[ind:ind] = mylist
+        return hl_list
+
+    
+    def gen_numbers(self, prev_A=-1, prev_B=-1):
+        """Make sure we don't have duplicate problems right after one
+        another"""
+
+        #B_ind = int(self.N_B*rand())
+        #B = self.B_list[B_ind]
+        B = 7# don't care and won't use it for now
+        A = int(self.max_A*rand())
+
+        while (A==prev_A) or (A < self.min_A):
+            A = self.rand_A()
+        return A, B
+
+
+    def one_problem(self, part1, part2, extra_space=True, **kwargs):
+        symbol, divide = self.get_symbol()
+
+        outlist = []
+        out = outlist.append
+
+        if extra_space:
+            out('\\vspace{1EM}')
+
+        has_blank = self.get_blank()
+
+        pat = '$%i \\; \\rightarrow \\; \\rule{5EM}{1pt}$'
+        lineout = pat % (part1)
+        out(lineout)
+
+        return outlist
+    
+
+
 class divide_fraction_horizontal(multiply_fraction_horizontal):
     def __init__(self, filename, B_list=[10,100,1000], max_A=100, \
                  M=7, N=1, **kwargs):
-        multiply_fraction_horizontal.__init__(self, filename, B_list=[10,100,1000], max_A=90, \
+        multiply_fraction_horizontal.__init__(self, filename, B_list=[10,100,1000], max_A=max_A, \
                                                     M=M, N=N, **kwargs)
         self.symbol = ' \\div '
     
@@ -865,9 +1116,9 @@ class multiply_by_2_or_3(multiplication_generator):
 
 class multiplication_intro_generator(multiply_by_3):
     def __init__(self, filename, B=3, max_A=9, **kwargs):
-        worksheet_generator.__init__(self, filename, **kwargs)
+        worksheet_generator.__init__(self, filename, max_A=max_A, **kwargs)
         self.symbol = '\\times '
-        self.max_A = max_A
+        #self.max_A = max_A
         self.B = B
 
 
@@ -1219,7 +1470,7 @@ def process_one_batch(mylist, title, lpr=False, web=False, okular=False):
             pcmd = "python3 -m webbrowser %s &" % pdf_name
             #pcmd = "okular %s" % pdf_name
             os.system(pcmd)
-            time.sleep(0.2)
+            time.sleep(0.5)
 
         if okular:
             #pcmd = "python3 -m webbrowser %s &" % pdf_name
@@ -1232,13 +1483,17 @@ def process_one_batch(mylist, title, lpr=False, web=False, okular=False):
             os.system(pcmd)
 
 
-siah_list = [#(multiplication_intro_generator, 'multiply_by_3_intro.tex'), \
+siah_list = [(multiplication_intro_generator, 'multiply_by_3_intro.tex'), \
+             #(multiplication_intro_generator, 'multiply_by_2_intro.tex', {'B':2}), \
+             (multiplication_intro_generator, 'multiply_by_4_intro.tex', {'B':4}), \
+             (multiplication_intro_generator, 'multiply_by_5_intro.tex', {'B':5}), \
              #(multiplication_intro_generator, 'multiply_by_4_intro.tex', {'B':4}), \
              #(multiply_range, 'multiply_by_2_thru_4_%s.tex' % datestr, {'B_list':[2,3,4]}), \
-             (subtraction_force_negative, 'neg_subtract_1.tex', {}), \
-             (add_big_to_little, 'add_big_to_little.tex', {}), \
-             (addition_within_20, "addition_within_20_siah_1.tex",{}), \
-             (subtraction_generator,'subtraction_within_20_siah_1.tex',{'mymax':20}), \
+             #(subtraction_force_negative, 'neg_subtract_1.tex', {}), \
+             #(add_big_to_little, 'add_big_to_little.tex', {}), \
+             #(addition_within_20, "addition_within_20_siah_1.tex",{}), \
+             #(subtraction_generator,'subtraction_within_20_siah_1.tex',{'mymax':20}), \
+             #(addition_level_2,'addition_new_2_siah.tex',{'max_A':30, 'max_B':20}), \
             ]
 
 cayden_list = [(addition_level_2,'addition_new_2.tex',{'max_A':30, 'max_B':20}), \
@@ -1261,17 +1516,41 @@ Jlist2 = [#(multiply_fraction_horizontal, "decimal_powers_h.tex", {}), \
           #(multiply_fraction_horizontal_with_blanks, "decimal_mult_w_blanks.tex", {}), \
           #(multiply_range, 'multiply_by_5_thru_9_%s.tex' % datestr, {'B_list':[5,6,7,8,9]}), \
           #(improper_fractions_gen, "imp_frac_1_%s.tex" % datestr), \
-          (multiply_or_divide_decimal_horizontal_with_blanks, "decimal_mult_or_div_with_blanks.tex"), \
-          (multiply_or_divide_horiz_large_exponents_blanks, "decimal_mult_or_div_large_exp_with_blanks.tex"), \
-          (multiply_or_divide_decimal_by_powers_of_ten_vertical, "decimal_mult_or_div_vert.tex"), \
+          #(multiply_or_divide_decimal_horizontal_with_blanks, "decimal_mult_or_div_with_blanks.tex"), \
+          #(multiply_or_divide_horiz_large_exponents_blanks, "decimal_mult_or_div_large_exp_with_blanks.tex"), \
+          #(multiply_or_divide_decimal_by_powers_of_ten_vertical, "decimal_mult_or_div_vert.tex"), \
+          (word_problem_multiply_version_1, "word_problems_mult_v1.tex"), \
+          (word_problem_multiply_version_1_with_blanks, "word_problems_mult_v1_with_blanks.tex"), \
+          (word_problem_multiply_version_2_ans_on_left, "word_problems_mult_v2_ans_left_no_blanks.tex"), \
+          (word_problem_multiply_version_2_ans_on_left_with_blanks, "word_problems_mult_v2_ans_left_with_blanks.tex"), \
+          ]
+
+Jlist3 = [#(round_to_tens_three_digit, 'rouding_to_tens.tex'), \
+          (mul_3_digits_by_1_digit_vertical, "mul_3_digits_by_1_vert.tex"), \
+          (mul_3_digits_by_1_digit_vertical, "mul_2_digits_by_1_vert.tex", {"max_A":100}), \
           ]
 
 web = args.web
 lpr = args.lpr
 okular = args.okular
-#process_one_batch(siah_list, title="Josiah's Math Sheets", lpr=lpr, web=web)
-#process_one_batch(cayden_list, title="Cayden's Math Sheets", lpr=lpr, web=web)
-#process_one_batch(joshua_list, title="Joshua's Math Sheets", lpr=lpr, web=web)
-process_one_batch(Jlist2, title="Joshua's Math Sheets", lpr=lpr, web=web, okular=okular)
 
+if args.siah:
+    nums = [4,6,7,8]
+    mylist = []
+    for num in nums:
+        for i in range(1):
+            j = i+1
+            fn = 'multiply_by_%i_intro_%i.tex' % (num, j)
+            cur_tup = (multiplication_intro_generator, fn, {'B':num})
+            mylist.append(cur_tup)
 
+    process_one_batch(mylist, title="Josiah's Math Sheets", lpr=lpr, web=web, okular=okular)
+    
+#    process_one_batch(siah_list, title="Josiah's Math Sheets", lpr=lpr, web=web, okular=okular)
+    
+if args.cayden:
+    process_one_batch(cayden_list, title="Cayden's Math Sheets", lpr=lpr, web=web, okular=okular)
+
+if args.joshua:
+    #process_one_batch(Jlist3, title="Joshua's Math Sheets", lpr=lpr, web=web, okular=okular)
+    process_one_batch(joshua_list, title="Joshua's Math Sheets", lpr=lpr, web=web, okular=okular)
