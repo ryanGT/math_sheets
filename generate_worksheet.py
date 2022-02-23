@@ -532,6 +532,22 @@ class multiply_by_B(multiply_by_3):
 
 
 
+class multiply_by_B_with_min(multiply_by_B):
+    def __init__(self, filename, B=4, max_A=9, min_A=2, N=6, **kwargs):
+        worksheet_generator.__init__(self, filename, N=N, max_A=max_A, **kwargs)
+        self.symbol = '\\times '
+        #self.max_A = max_A
+        self.B = B
+        self.min_A = min_A
+
+
+    def rand_A(self):
+        A = myrand(self.max_A, mymin=self.min_A)
+        while A < self.min_A:
+            A = myrand(self.max_A, mymin=self.min_A)
+        return A
+
+
 class multiply_range(multiply_by_B):
     def __init__(self, filename, B_list=[5,6,7], max_A=9, N=6, **kwargs):
         worksheet_generator.__init__(self, filename, N=N, **kwargs)
@@ -1452,6 +1468,8 @@ datestr = now.strftime('%m_%d_%y')
 import time
 
 def process_one_batch(mylist, title, lpr=False, web=False, okular=False):
+    pdf_list = []
+    
     for row in mylist:
         myclass = row[0]
         fn = row[1]
@@ -1465,6 +1483,7 @@ def process_one_batch(mylist, title, lpr=False, web=False, okular=False):
 
         fno, ext = os.path.splitext(fn)
         pdf_name = fno + '.pdf'
+        pdf_list.append(pdf_name)
 
         if web:
             pcmd = "python3 -m webbrowser %s &" % pdf_name
@@ -1481,6 +1500,8 @@ def process_one_batch(mylist, title, lpr=False, web=False, okular=False):
         if lpr:
             pcmd = "lpr %s &" % pdf_name
             os.system(pcmd)
+
+    return pdf_list
 
 
 siah_list = [(multiplication_intro_generator, 'multiply_by_3_intro.tex'), \
@@ -1534,22 +1555,61 @@ web = args.web
 lpr = args.lpr
 okular = args.okular
 
+#(multiply_by_B, 'multiply_by_8_%s.tex' % datestr, {'B':8}), \
+#(multiplication_intro_generator, fn, {'B':num})
+
 if args.siah:
     nums = [4,6,7,8]
     mylist = []
+    pdflist = []
     for num in nums:
-        for i in range(1):
+        for i in range(5):
             j = i+1
-            fn = 'multiply_by_%i_intro_%i.tex' % (num, j)
-            cur_tup = (multiplication_intro_generator, fn, {'B':num})
+            fn = 'multiply_by_%i_level_3_%i.tex' % (num, j)
+            #cur_tup = (multiplication_intro_generator, fn, {'B':num})
+            cur_tup = (multiply_by_B_with_min, fn, {'B':num,'mymin':3})
             mylist.append(cur_tup)
+            fno, ext = os.path.splitext(fn)
+            pdf_name = fno + ".pdf"
+            pdflist.append(pdf_name)
+            
 
-    process_one_batch(mylist, title="Josiah's Math Sheets", lpr=lpr, web=web, okular=okular)
+    process_one_batch(mylist, title="Josiah's Math Sheets: Level 3", lpr=0, web=0, okular=0)
+
+    # combine them into one pdf:
+    # pdftk_merge.py inputfiles outputfile.pdf
+    pat = "pdftk_merge.py %s %s"
+    file_str = " ".join(pdflist)
+    output_fn = "josiah_combined_many_muls.pdf"
+    cmd = pat % (file_str, output_fn)
+    os.system(cmd)
+    pcmd = "python3 -m webbrowser %s &" % output_fn
+    print(pcmd)
+    os.system(pcmd)
+    
     
 #    process_one_batch(siah_list, title="Josiah's Math Sheets", lpr=lpr, web=web, okular=okular)
     
 if args.cayden:
-    process_one_batch(cayden_list, title="Cayden's Math Sheets", lpr=lpr, web=web, okular=okular)
+    #process_one_batch(cayden_list, title="Cayden's Math Sheets", lpr=lpr, web=web, okular=okular)
+    clist = [(addition_within_20, "addition_within_20_p_1.tex",{}), \
+             (addition_within_20, "addition_within_20_p_2.tex",{}), \
+             (subtraction_generator,'subtraction_within_20_p_1.tex',{'mymax':20}), \
+             (subtraction_generator,'subtraction_within_20_p_2.tex',{'mymax':20}), \
+             ]
+
+    pdflist = process_one_batch(clist, title="Cayden's Math Sheets: Winter Break", lpr=0, web=0, okular=0)
+
+    # combine them into one pdf:
+    # pdftk_merge.py inputfiles outputfile.pdf
+    pat = "pdftk_merge.py %s %s"
+    file_str = " ".join(pdflist)
+    output_fn = "cayden_combined_winter_break_add_subtract.pdf"
+    cmd = pat % (file_str, output_fn)
+    os.system(cmd)
+    pcmd = "python3 -m webbrowser %s &" % output_fn
+    print(pcmd)
+    os.system(pcmd)
 
 if args.joshua:
     #process_one_batch(Jlist3, title="Joshua's Math Sheets", lpr=lpr, web=web, okular=okular)
